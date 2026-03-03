@@ -2,120 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import TrendingSidebar from '@/components/TrendingSidebar';
-
-const promptData = [
-  {
-    id: 1,
-    title: 'Hyper-Realistic Cyberpunk Portrait',
-    category: 'Midjourney',
-    model: 'MIDJOURNEY V8',
-    price: 15,
-    fiatPrice: '$12.99',
-    rating: 4.8,
-    likes: '1.2k',
-    downloads: '840',
-    reliability: '98% Reliability',
-    reliabilityType: 'emerald',
-    description: 'Highly detailed prompt for photorealistic architectural glass and neon elements in a cyberpunk setting.',
-    creator: '@neon_arc',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuA0gEfY77P8og-t9s-StwLL50G1Kdh_qBP-RXyRh2V3hm5l4M_rCqeDgSYVJK3EqbyEuQlMxAF69HBjmhWJxSR-XyQEENOTir16rTcei3IQn4dGAxGn7QWLFHTXU9exp_az796KuzdNKlOjluXlFkacWLBT1D36MOjmVnMcIDrdyktN52HsUQho69MKXlCb2FAnQaB8s_5tclye_LIYnjaokIGZsXylVvOnbDsBPx9xmpgGdC-7NALHK42h60DgC6wFOdaoV3o1fNo',
-    dataAlt: 'Cyberpunk portrait'
-  },
-  {
-    id: 2,
-    title: 'Minimalist Architectural Render',
-    category: 'Architecture',
-    model: 'STABLE DIFFUSION 3',
-    price: 12,
-    fiatPrice: '$9.99',
-    rating: 4.5,
-    likes: '950',
-    downloads: '420',
-    reliability: '95% Reliability',
-    reliabilityType: 'emerald',
-    description: 'Clean and modern minimalist architectural visualization with glass and concrete textures.',
-    creator: '@archizoom',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCYEC-sCe_gJmifDnY0EaBrToNnVey3Ab9bt46kjYSRJWR01i8Ztn3Nef80uApuD1My_rd2_QW0HXM4v9gWk3LSUHJQnXy4ZCAf59uvaQvFvzE733SJw6qzhbncq3eMoEEfGnJk2XvYfwPaI2f0vQ-rJEBUOh6N00Mn9Xv59YyV4FPs7LhfKZytFE_VhnXrg3BwDEo-TXZY3JQ-CD3W3wkHlUV9tFObTOE0jeQjOIaYUC4UqvhWVYsAAGxaw4f4QrknNhMx1j9Yrj8',
-    dataAlt: 'Architectural render'
-  },
-  {
-    id: 3,
-    title: 'Strategic Business Logic Agent',
-    category: 'GPT-4',
-    model: 'GPT-5 TURBO',
-    price: 25,
-    fiatPrice: '$24.99',
-    rating: 4.9,
-    likes: '2.5k',
-    downloads: '1.8k',
-    reliability: '100% Reliable',
-    reliabilityType: 'blue',
-    description: 'Advanced logical reasoning prompt for business strategy and complex data analysis.',
-    creator: '@logic_smith',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuALrfzOAW8Q4zK5GkcrvbDnTWc4_UwZgVjmgFEQp_srS6qTjyd8JhcvwgjfpuAUZKzUIFqCSY5CZnul2XVbJQ9laMK0bH-2tgjEGNu6gzZLszPnOI7PkZeYJhIreXWivsZWxA3_3023sMjqvDEJv2lm03P7su92XdDa_DWmUacOPoTaMHIUrW3A_29Mq3nQYNNxW74BlN-eOtu2KLgMdKngbcscu8on7EdX2GTgGFfvsWiGXaqPy-f5h7I2RcB81j_fhkIgJO3Lq2U',
-    dataAlt: 'Data visualization'
-  },
-  {
-    id: 4,
-    title: 'Organic Liquid Motion Background',
-    category: 'Abstract',
-    model: 'DALL-E 4',
-    price: 10,
-    fiatPrice: '$7.99',
-    rating: 4.2,
-    likes: '800',
-    downloads: '310',
-    reliability: '92% Reliability',
-    reliabilityType: 'emerald',
-    description: 'Smooth flowing liquid textures for high-end background visualizations and motion graphics.',
-    creator: '@fluid_master',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBvRZSLWDavVwIcq5GlOseofZmkO62eJ9rusYAn2NNFwAOoMIYE-1Nq1v8eqQd9EBrHsYMp5QZ7antTAnkw4bTxccogwuBOX1TO0D2-koVoml2FAglDwjfSvthGTd0wqae5e8d1kb7DN1VXhbcem9v0Ae8g9Ven8TE6O-WorFE05IRpwzsGzoXSw1ERB-Ytj_LygHPDaV1nbRlHQENogmgRws9z2YaQapJscJNUiON4En9AmTnJYdnvB32OOMODSQjVpx5MO2vFroY',
-    dataAlt: 'Liquid motion'
-  },
-  {
-    id: 7,
-    title: '8K Nature Forest Photography',
-    category: 'Nature',
-    model: 'MIDJOURNEY V7',
-    price: 18,
-    fiatPrice: '$15.99',
-    rating: 4.7,
-    likes: '1.4k',
-    downloads: '920',
-    reliability: '97% Reliability',
-    reliabilityType: 'emerald',
-    description: 'Incredible depth and realistic forest lighting captured in amazing 8K resolution.',
-    creator: '@nature_pix',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDI987ybQdbxwPydnrprUfqA62O7YApVvRSJ7TCft7JoahgzuLRlr-wXCzGOxKM-23bF3DYoXNDtxBqBsbQ16ws1p6UDRj2nlIhnqYh0zxmHfloczbCQWbAQzepllwO4irXJ7SgGMRlKKrWqoyNunVhxXvuoGwhaxzL-9J6qdnlzRh0t4pLWEVO-bzmsocuFqSbO7QWAHJLxiZ7Doh_g7MroooFZpLBRkemaCRNDDKViwfOA0w771JCETACLhpG1oUj6xdRzgfuDCU',
-    dataAlt: 'Nature forest'
-  },
-  {
-    id: 8,
-    title: 'Enterprise Code Sec Audit',
-    category: 'Coding',
-    model: 'CLAUDE 4 OPUS',
-    price: 35,
-    fiatPrice: '$32.99',
-    rating: 5.0,
-    likes: '3.2k',
-    downloads: '2.5k',
-    reliability: '100% Reliable',
-    reliabilityType: 'blue',
-    description: 'Professional grade security audit prompt for identifying vulnerabilities in complex codebases.',
-    creator: '@sec_dev',
-    image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAyw-AFQh5cV4gJ8Bq_BGb4TzktX_Lcy1vjsZYNAN-uRwVOof9ZGYjd3-K-SI4Zwh8L63yckvVAsMNos4zETrgvOWGBzg_ZyYo147vq3ZWLdNJZSNUB0ctArAwU8rJj0bMiIw5p1H7i5qNbbyR4ymU4SXp4HDHnXtspVhcKdYd7OzEd8_BRLysbEnfgnUYfCCtE22q8AvxFnUnmzYO_msGM2BzFoeN8OGrmx094CLVlkm6a5NPYXv8MgeolHf-iQzdHJFqZ-J79Uq4',
-    dataAlt: 'Code sequence'
-  }
-];
-
-
-const filters: string[] = [
-  'All Prompts',
-  'Trending',
-  'New',
-  'Top Rated'
-];
+import { supabase } from '@/lib/supabase';
 
 const verticalCategories = [
   { name: 'All Categories', icon: 'apps', count: 156 },
@@ -131,7 +18,8 @@ const verticalCategories = [
 ];
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('All Prompts');
+  const [prompts, setPrompts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -140,13 +28,40 @@ export default function Home() {
   const [selectedReliability, setSelectedReliability] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState('Relevant');
   const [showFiltersPanel, setShowFiltersPanel] = useState(true);
-  const [bookmarkedPrompts, setBookmarkedPrompts] = useState<Set<number>>(new Set());
-  const [activeFilterTab, setActiveFilterTab] = useState('service');
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [selectedPrompts, setSelectedPrompts] = useState<Set<number>>(new Set());
 
-  // Close dropdown when clicking outside
   useEffect(() => {
+    async function fetchPrompts() {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('prompts')
+          .select(`
+            *,
+            profiles:creator_id (
+              full_name,
+              username,
+              avatar_url
+            )
+          `);
+        
+        if (!error && data && data.length > 0) {
+          setPrompts(data);
+        } else {
+          const { promptData } = require('@/lib/data');
+          setPrompts(promptData || []);
+        }
+      } catch (e) {
+        const { promptData } = require('@/lib/data');
+        setPrompts(promptData || []);
+      }
+      setLoading(false);
+    }
+    fetchPrompts();
+
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setOpenDropdown(null);
@@ -159,8 +74,7 @@ export default function Home() {
     };
   }, []);
 
-  // Filtering Logic
-  const filteredPrompts = promptData.filter(prompt => {
+  const filteredPrompts = (prompts || []).filter(prompt => {
     if (selectedCategories.length > 0 && !selectedCategories.includes(prompt.category)) return false;
     if (selectedModels.length > 0 && !selectedModels.includes(prompt.model)) return false;
     if (selectedReliability.length > 0 && !selectedReliability.includes(prompt.reliability)) return false;
@@ -185,36 +99,19 @@ export default function Home() {
     setSelectedReliability(prev => prev.includes(rel) ? prev.filter(r => r !== rel) : [...prev, rel]);
   };
 
-  const toggleBookmark = (promptId: number, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setBookmarkedPrompts(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(promptId)) {
-        newSet.delete(promptId);
-      } else {
-        newSet.add(promptId);
-      }
-      return newSet;
-    });
-  };
-
   return (
     <div className="flex flex-col min-h-screen">
-
-      {/* Mobile Filters Drawer Overlay */}
       {showMobileFilters && (
         <div className="fixed inset-0 z-[100] lg:hidden">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowMobileFilters(false)} />
-          <div className="absolute right-0 top-0 bottom-0 w-[85%] max-w-[360px] bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="text-lg font-bold">Filters &amp; Options</h2>
-              <button onClick={() => setShowMobileFilters(false)} className="size-10 rounded-full flex items-center justify-center hover:bg-slate-100 transition-all">
-                <span className="material-symbols-outlined text-slate-400">close</span>
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowMobileFilters(false)} />
+          <div className="absolute right-0 top-0 bottom-0 w-[85%] max-w-[360px] bg-white border-l border-black flex flex-col animate-in slide-in-from-right duration-300">
+            <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="text-[10px] font-black uppercase tracking-widest text-black italic">CONFIG_FILTERS_PRO</h2>
+              <button onClick={() => setShowMobileFilters(false)} className="size-8 border border-slate-100 flex items-center justify-center text-slate-400 hover:text-black hover:border-black transition-all">
+                <span className="material-symbols-outlined text-lg">close</span>
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-8 no-scrollbar">
-              {/* Sort By */}
               <div>
                 <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Sort By</h4>
                 <select
@@ -229,7 +126,6 @@ export default function Home() {
                 </select>
               </div>
 
-              {/* Categories */}
               <div>
                 <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Categories</h4>
                 <div className="space-y-3">
@@ -247,7 +143,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Model */}
               <div>
                 <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Model</h4>
                 <div className="space-y-3">
@@ -265,7 +160,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Reliability */}
               <div>
                 <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Reliability</h4>
                 <div className="space-y-3">
@@ -287,25 +181,21 @@ export default function Home() {
         </div>
       )}
 
-      {/* Desktop Layout: Main Content with Sidebar */}
       <div className="flex flex-1">
-        {/* Main Content Area */}
         <main className="flex-1 transition-all duration-300 lg:ml-16">
           <div className="w-full px-4 sm:px-6 lg:px-8">
-            {/* Mobile Top Navigation */}
-            <nav className="lg:hidden sticky top-0 z-50 w-full glass-effect border-b border-white/20 mb-4">
+            <nav className="lg:hidden sticky top-0 z-50 w-full bg-white border-b border-black mb-10">
               <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="bg-primary p-1.5 rounded-lg text-white">
-                    <span className="material-symbols-outlined text-2xl block">electric_bolt</span>
+                  <div className="bg-black p-1.5 text-white">
+                    <span className="material-symbols-outlined text-xl block">electric_bolt</span>
                   </div>
-                  <h1 className="text-xl font-bold tracking-tight">PromptMarket</h1>
+                  <h1 className="text-lg font-black tracking-tighter uppercase italic">MARKET <span className="text-slate-300">PRO</span></h1>
                 </div>
                 <div className="flex items-center gap-4">
                   <Link href="/profile">
                     <div
-                      className="size-10 rounded-full border-2 border-white bg-cover bg-center shadow-sm cursor-pointer hover:border-primary transition-colors"
-                      data-alt="User profile avatar close up"
+                      className="size-10 border-2 border-black bg-cover bg-center cursor-pointer"
                       style={{ backgroundImage: 'url(https://lh3.googleusercontent.com/aida-public/AB6AXuDyrRnmar-je_OLpz_YnW4YsUyEjxLLzEKr5G_wEKsMZLBqxTdGY3mCT315-wtapbd9Ia88qwnDH9-Dtk9Ga6JB9D0YU6SXqLXYUkBsKGmy21uZJwTdF2JuFI2jyfWY0IJF0NM2gJElFFqfdXfBKq2Cr74e2l-p2Or4OpsWUkf9710LL46LwqntWg86KD-6t6S2r8HuJ-MOrNFOq7BQ4Bu8zO3L-aImdNQuNKqhrTSLO3pzufzF9dJoP_X6tms6fGYdphb7H2ZWc5k)' }}
                     />
                   </Link>
@@ -313,53 +203,74 @@ export default function Home() {
               </div>
             </nav>
 
-            {/* Sidebar Toggle Button */}
             {!showSidebar && (
-              <div className="lg:flex justify-start mb-4 px-4 hidden">
+              <div className="lg:flex justify-start mb-8 px-4 hidden">
                 <button
                   onClick={() => setShowSidebar(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-white text-sm font-bold transition-all active:scale-95"
+                  className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 shadow-xl shadow-slate-900/20 text-white text-sm font-bold transition-all active:scale-95 group"
                 >
-                  <span className="material-symbols-outlined text-[20px]">tune</span>
-                  <span>Show Filters</span>
+                  <span className="material-symbols-outlined text-[20px] group-hover:rotate-180 transition-transform">tune</span>
+                  <span>Open Filters</span>
                 </button>
               </div>
             )}
 
-            {/* Hero / Search */}
-            <section className="py-8 sm:py-10 text-center relative">
-              <div className="max-w-4xl mx-auto">
-                <div className="p-2 rounded-2xl shadow-xl border border-slate-200 flex items-center bg-white mb-6">
-                  <div className="pl-4 text-slate-400">
-                    <span className="material-symbols-outlined">search</span>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search prompts..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1 px-4 py-3 outline-none text-slate-700 placeholder-slate-400"
-                  />
+            <section className="relative pt-20 pb-16 text-center overflow-hidden">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.08)_0,transparent_70%)] pointer-events-none"></div>
+              
+              <div className="max-w-4xl mx-auto px-4 relative z-10">
+                
+                <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-slate-900 mb-6 leading-[1.1]">
+                  Master the Art of <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">AI Prompting.</span>
+                </h1>
+                
+                <p className="text-slate-500 text-lg max-w-2xl mx-auto mb-12 font-medium">
+                  The world's premier infrastructure for high-performance prompt engineering and AI asset management.
+                </p>
+
+                <div className="max-w-2xl mx-auto glass-effect p-2 rounded-3xl shadow-card border border-white/40 flex items-center group transition-all focus-within:ring-4 focus-within:ring-primary/10">
+                    <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary ml-1">
+                      <span className="material-symbols-outlined text-2xl">search</span>
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="Search for prompts, models, or creators..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="flex-1 outline-none px-4 text-slate-900 placeholder-slate-400 font-medium text-base bg-transparent"
+                    />
+                    <button className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-bold text-sm hover:bg-primary transition-all shadow-lg shadow-slate-900/10">
+                      Search
+                    </button>
+                </div>
+
+                <div className="mt-10 flex flex-wrap justify-center gap-3">
+                    <span className="text-xs font-bold text-slate-400 mr-2 uppercase tracking-widest mt-2">Trending:</span>
+                    {['#MidjourneyV6', '#Cyberpunk', '#Prototypes', '#Logos', '#CodeReview'].map(tag => (
+                        <button key={tag} className="px-5 py-2 rounded-full bg-white border border-slate-200 text-slate-600 text-xs font-semibold hover:border-primary/30 hover:text-primary hover:bg-primary/5 transition-all shadow-sm">
+                            {tag}
+                        </button>
+                    ))}
                 </div>
               </div>
             </section>
 
-            {/* Filters Header and Panel */}
-            <section className="mb-8">
-              {/* Filters Header */}
-              <div className="flex items-center justify-between mb-4">
+            <section className="mb-8 px-4">
+              <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-4">
                   <button
                     onClick={() => setShowFiltersPanel(!showFiltersPanel)}
-                    className="flex items-center gap-2 text-lg font-bold text-slate-800 hover:text-primary transition-colors"
+                    className="flex items-center gap-2 text-lg font-bold text-slate-800 hover:text-primary transition-colors group"
                   >
-                    <span>Filters</span>
-                    <span className={`material-symbols-outlined transition-transform duration-200 ${showFiltersPanel ? 'rotate-180' : ''}`}>expand_more</span>
+                    <span>Advanced Filters</span>
+                    <span className={`material-symbols-outlined transition-transform duration-300 ${showFiltersPanel ? 'rotate-180 text-primary' : 'text-slate-400 group-hover:text-primary'}`}>expand_more</span>
                   </button>
                   {(selectedCategories.length > 0 || selectedModels.length > 0 || selectedReliability.length > 0) && (
-                    <span className="text-sm text-slate-500">
-                      {selectedCategories.length + selectedModels.length + selectedReliability.length} applied
-                    </span>
+                    <div className="flex items-center gap-2 bg-primary/5 px-3 py-1 rounded-full border border-primary/10">
+                      <span className="text-xs font-bold text-primary tracking-tight">
+                        {selectedCategories.length + selectedModels.length + selectedReliability.length} Applied
+                      </span>
+                    </div>
                   )}
                 </div>
                 <button
@@ -368,64 +279,59 @@ export default function Home() {
                     setSelectedModels([]);
                     setSelectedReliability([]);
                   }}
-                  className="text-sm text-primary font-medium hover:underline"
+                  className="text-xs text-primary font-bold hover:underline transition-all"
                 >
-                  Clear all
+                  Clear all filters
                 </button>
               </div>
 
-              {/* Filters Panel - Dropdown Style */}
               {showFiltersPanel && (
-                <div ref={dropdownRef} className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
-                  {/* Filter Tabs */}
+                <div ref={dropdownRef} className="bg-white border border-slate-100 rounded-3xl shadow-card p-6 mb-12">
                   <div className="flex flex-wrap gap-2">
                     {[
                       { id: 'service', label: 'Service options' },
                       { id: 'seller', label: 'Seller details' },
-                      { id: 'budget', label: 'Budget' },
-                      { id: 'delivery', label: 'Delivery time' }
+                      { id: 'budget', label: 'Budget' }
                     ].map((tab) => (
                       <div key={tab.id} className="relative">
                         <button
                           onClick={() => setOpenDropdown(openDropdown === tab.id ? null : tab.id)}
-                          className={`px-4 py-2 text-sm font-medium transition-all rounded-lg border flex items-center gap-2 ${
+                          className={`px-5 py-2.5 text-sm font-bold transition-all rounded-2xl border-2 flex items-center gap-2 ${
                             openDropdown === tab.id
                               ? 'text-primary border-primary bg-primary/5'
-                              : 'text-slate-600 border-slate-200 hover:text-slate-900 hover:bg-slate-50'
+                              : 'text-slate-600 border-slate-100 hover:text-slate-900 hover:border-slate-300'
                           }`}
                         >
                           {tab.label}
-                          <span className={`material-symbols-outlined text-[16px] transition-transform duration-200 ${
+                          <span className={`material-symbols-outlined text-[18px] transition-transform duration-300 ${
                             openDropdown === tab.id ? 'rotate-180' : ''
                           }`}>
                             expand_more
                           </span>
                         </button>
 
-                        {/* Dropdown Menu */}
                         {openDropdown === tab.id && (
-                          <div className="absolute top-full left-0 mt-1 w-80 bg-white border border-slate-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
-                            <div className="p-4">
-                              {/* Service Options Dropdown */}
+                          <div className="absolute top-full left-0 mt-3 w-80 bg-white border border-slate-100 rounded-3xl shadow-card z-50 max-h-96 overflow-y-auto animate-in fade-in zoom-in duration-200">
+                            <div className="p-6">
                               {tab.id === 'service' && (
                                 <div className="space-y-4">
                                   <div>
-                                    <h4 className="text-sm font-semibold text-slate-800 mb-2">Categories</h4>
+                                    <h4 className="text-sm font-bold text-slate-900 mb-3">Categories</h4>
                                     <div className="space-y-1">
                                       {['Midjourney', 'DALL-E 3', 'GPT-4', 'Claude', 'Stable Diffusion', 'Architecture', 'Nature', 'Abstract', 'Coding'].map((cat) => {
                                         const count = verticalCategories.find(c => c.name === cat)?.count || 0;
                                         return (
-                                          <label key={cat} className="flex items-center justify-between cursor-pointer group p-1.5 rounded hover:bg-slate-50 transition-colors">
+                                          <label key={cat} className="flex items-center justify-between cursor-pointer group p-2 rounded-xl hover:bg-slate-50 transition-colors">
                                             <div className="flex items-center gap-2">
                                               <input
                                                 type="checkbox"
                                                 checked={selectedCategories.includes(cat)}
                                                 onChange={() => toggleCategory(cat)}
-                                                className="w-3.5 h-3.5 text-primary border-slate-300 rounded focus:ring-primary"
+                                                className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary accent-primary"
                                               />
-                                              <span className={`text-xs transition-colors ${selectedCategories.includes(cat) ? 'text-primary font-semibold' : 'text-slate-600 group-hover:text-slate-900'}`}>{cat}</span>
+                                              <span className={`text-sm transition-colors ${selectedCategories.includes(cat) ? 'text-primary font-bold' : 'text-slate-600 group-hover:text-slate-900'}`}>{cat}</span>
                                             </div>
-                                            <span className="text-xs text-slate-400">({count})</span>
+                                            <span className="text-[10px] font-bold text-slate-300">({count})</span>
                                           </label>
                                         );
                                       })}
@@ -433,17 +339,17 @@ export default function Home() {
                                   </div>
 
                                   <div>
-                                    <h4 className="text-sm font-semibold text-slate-800 mb-2">Models</h4>
+                                    <h4 className="text-sm font-bold text-slate-900 mb-3">Model Architecture</h4>
                                     <div className="space-y-1">
-                                      {['MIDJOURNEY V8', 'STABLE DIFFUSION 3', 'GPT-5 TURBO', 'DALL-E 4', 'MIDJOURNEY V7', 'CLAUDE 4 OPUS'].map((model) => (
-                                        <label key={model} className="flex items-center gap-2 cursor-pointer group p-1.5 rounded hover:bg-slate-50 transition-colors">
+                                      {['Midjourney v6.1', 'Midjourney v6.0', 'DALL-E 3', 'GPT-4o', 'Stable Diffusion 3', 'Claude 3.5 Sonnet'].map((model) => (
+                                        <label key={model} className="flex items-center gap-2 cursor-pointer group p-2 rounded-xl hover:bg-slate-50 transition-colors">
                                           <input
                                             type="checkbox"
                                             checked={selectedModels.includes(model)}
                                             onChange={() => toggleModel(model)}
-                                            className="w-3.5 h-3.5 text-primary border-slate-300 rounded focus:ring-primary"
+                                            className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary accent-primary"
                                           />
-                                          <span className={`text-xs transition-colors ${selectedModels.includes(model) ? 'text-primary font-semibold' : 'text-slate-600 group-hover:text-slate-900'}`}>{model}</span>
+                                          <span className={`text-sm transition-colors ${selectedModels.includes(model) ? 'text-primary font-bold' : 'text-slate-600 group-hover:text-slate-900'}`}>{model}</span>
                                         </label>
                                       ))}
                                     </div>
@@ -451,27 +357,26 @@ export default function Home() {
                                 </div>
                               )}
 
-                              {/* Seller Details Dropdown */}
                               {tab.id === 'seller' && (
                                 <div className="space-y-4">
                                   <div>
-                                    <h4 className="text-sm font-semibold text-slate-800 mb-2">Seller level</h4>
+                                    <h4 className="text-sm font-bold text-slate-900 mb-3">Seller Experience</h4>
                                     <div className="space-y-1">
                                       {[
-                                        { name: 'Top Rated Seller', count: 428 },
-                                        { name: 'Level 2', count: 1946 },
-                                        { name: 'Level 1', count: 2524 },
-                                        { name: 'New Seller', count: 12906 }
+                                        { name: 'Elite Creators', count: 428 },
+                                        { name: 'Certified Pro', count: 1946 },
+                                        { name: 'Verified Expert', count: 2524 },
+                                        { name: 'Rising Talent', count: 12906 }
                                       ].map((seller) => (
-                                        <label key={seller.name} className="flex items-center justify-between cursor-pointer group p-1.5 rounded hover:bg-slate-50 transition-colors">
+                                        <label key={seller.name} className="flex items-center justify-between cursor-pointer group p-2 rounded-xl hover:bg-slate-50 transition-colors">
                                           <div className="flex items-center gap-2">
                                             <input
                                               type="checkbox"
-                                              className="w-3.5 h-3.5 text-primary border-slate-300 rounded focus:ring-primary"
+                                              className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary accent-primary"
                                             />
-                                            <span className="text-xs text-slate-600 group-hover:text-slate-900">{seller.name}</span>
+                                            <span className="text-sm text-slate-600 group-hover:text-slate-900 font-medium">{seller.name}</span>
                                           </div>
-                                          <span className="text-xs text-slate-400">({seller.count})</span>
+                                          <span className="text-[10px] font-bold text-slate-300">({seller.count})</span>
                                         </label>
                                       ))}
                                     </div>
@@ -496,7 +401,6 @@ export default function Home() {
                                 </div>
                               )}
 
-                              {/* Budget Dropdown */}
                               {tab.id === 'budget' && (
                                 <div className="space-y-4">
                                   <div>
@@ -521,32 +425,6 @@ export default function Home() {
                                   </div>
                                 </div>
                               )}
-
-                              {/* Delivery Time Dropdown */}
-                              {tab.id === 'delivery' && (
-                                <div className="space-y-4">
-                                  <div>
-                                    <h4 className="text-sm font-semibold text-slate-800 mb-2">Delivery time</h4>
-                                    <div className="space-y-1">
-                                      {[
-                                        { time: 'Express (24 hours)', hours: 24 },
-                                        { time: 'Fast (1-3 days)', hours: 72 },
-                                        { time: 'Standard (3-7 days)', hours: 168 },
-                                        { time: 'Extended (1-2 weeks)', hours: 336 },
-                                        { time: 'Flexible (2+ weeks)', hours: 999 }
-                                      ].map((delivery) => (
-                                        <label key={delivery.time} className="flex items-center gap-2 cursor-pointer group p-1.5 rounded hover:bg-slate-50 transition-colors">
-                                          <input
-                                            type="checkbox"
-                                            className="w-3.5 h-3.5 text-primary border-slate-300 rounded focus:ring-primary"
-                                          />
-                                          <span className="text-xs text-slate-600 group-hover:text-slate-900">{delivery.time}</span>
-                                        </label>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
                             </div>
                           </div>
                         )}
@@ -557,69 +435,77 @@ export default function Home() {
               )}
             </section>
 
-            {/* Prompt Grid */}
             <section className="px-0 pb-8">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                   {filteredPrompts.length} Results Found
                 </h3>
+                <button 
+                    onClick={() => {
+                        setBulkMode(!bulkMode);
+                        if (bulkMode) setSelectedPrompts(new Set());
+                    }}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs transition-all ${
+                        bulkMode 
+                            ? 'bg-slate-900 text-white' 
+                            : 'bg-white border border-slate-200 text-slate-600 hover:border-primary/50'
+                    }`}
+                >
+                    <span className="material-symbols-outlined text-[18px]">
+                        {bulkMode ? 'check_box' : 'add_box'}
+                    </span>
+                    <span>{bulkMode ? 'Cancel Bulk' : 'Bulk Selection'}</span>
+                </button>
               </div>
 
-              {filteredPrompts.length > 0 ? (
+              {loading ? (
+                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 xs:gap-3 sm:gap-4">
+                  {[...Array(8)].map((_, i) => (
+                    <div key={i} className="animate-pulse bg-white rounded-2xl border border-slate-100 flex flex-col h-full overflow-hidden shadow-sm">
+                      <div className="aspect-[4/5] bg-slate-100" />
+                      <div className="p-6 space-y-4">
+                        <div className="h-4 bg-slate-100 rounded w-3/4" />
+                        <div className="h-4 bg-slate-100 rounded w-1/2" />
+                        <div className="h-12 bg-slate-50 rounded-2xl mt-auto" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : filteredPrompts.length > 0 ? (
                 <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 xs:gap-3 sm:gap-4">
                   {filteredPrompts.map((prompt) => (
-                    <Link key={prompt.id} href={`/prompt/${prompt.id}`} className="block">
-                      <div className="prompt-card group bg-white rounded-lg xs:rounded-xl sm:rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 border border-slate-100 flex flex-col h-full">
-                        {/* Card Image Area */}
-                        <div className="relative aspect-square overflow-hidden bg-slate-900">
-                          <div
-                            className="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-110 opacity-90 group-hover:opacity-100"
-                            style={{ backgroundImage: `url(${prompt.image})` }}
+                    <Link key={prompt.id} href={`/prompt/${prompt.id}`} className="block group">
+                      <div className="bg-white rounded-[2rem] border border-slate-100 flex flex-col h-full relative overflow-hidden hover:border-primary/20 hover:shadow-card transition-all duration-300">
+                        <div className="relative aspect-square overflow-hidden bg-slate-50">
+                          <img
+                            src={prompt.image_url || prompt.image || 'https://via.placeholder.com/400x500'}
+                            alt={prompt.title}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                           />
-
-                          {/* Bookmark Button */}
-                          <button
-                            onClick={(e) => toggleBookmark(prompt.id, e)}
-                            className="absolute top-1.5 xs:top-2 sm:top-3 right-1.5 xs:right-2 sm:right-3 bg-white/90 backdrop-blur-md p-1.5 xs:p-2 sm:p-2.5 rounded-full flex items-center justify-center shadow-sm border border-white/20 hover:bg-white hover:scale-110 transition-all duration-200"
-                          >
-                            <span className={`material-symbols-outlined text-[14px] xs:text-[16px] sm:text-[18px] transition-colors duration-200 ${
-                              bookmarkedPrompts.has(prompt.id) 
-                                ? 'text-primary fill-[1]' 
-                                : 'text-slate-400 hover:text-slate-600'
-                            }`}>
-                              {bookmarkedPrompts.has(prompt.id) ? 'bookmark' : 'bookmark_border'}
-                            </span>
-                          </button>
+                          <div className="absolute top-4 left-4">
+                             <div className="px-3 py-1 bg-white/90 backdrop-blur-md text-[10px] font-bold text-slate-800 uppercase tracking-wider rounded-lg shadow-sm border border-white/20">
+                                {prompt.category}
+                             </div>
+                          </div>
                         </div>
 
-                        {/* Card Content Area */}
-                        <div className="p-2 xs:p-2.5 sm:p-3 flex flex-col flex-1">
-                          {/* Title & Price Row */}
-                          <div className="flex justify-between items-start mb-1.5">
-                            <h4 className="font-extrabold text-[10px] xs:text-sm sm:text-base text-slate-800 leading-tight group-hover:text-primary transition-colors flex-1 line-clamp-1 xs:line-clamp-2">
-                              {prompt.title}
-                            </h4>
-                          </div>
-
-                          {/* Description Text */}
-                          <p className="text-slate-400 text-[9px] xs:text-xs sm:text-sm leading-relaxed line-clamp-1 xs:line-clamp-2 mb-1.5 xs:mb-2 sm:mb-3 font-medium">
-                            {(prompt as any).description || 'Highly detailed prompt for photorealistic architectural glass and neon elements...'}
+                        <div className="p-5 flex flex-col flex-1">
+                          <h4 className="font-bold text-sm text-slate-900 mb-1 group-hover:text-primary transition-colors line-clamp-1">
+                            {prompt.title}
+                          </h4>
+                          <p className="text-xs text-slate-400 font-medium mb-4">
+                             by {prompt.profiles?.full_name || 'Anonymous'}
                           </p>
-
-                          {/* Footer Stats & Credit Price */}
-                          <div className="mt-auto pt-1 xs:pt-1.5 sm:pt-2 border-t border-slate-50">
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-1.5 text-slate-400">
-                                <span className="material-symbols-outlined text-[8px] xs:text-[10px] sm:text-[12px]">favorite</span>
-                                <span className="text-[6px] xs:text-[7px] sm:text-[9px] font-bold leading-none">{(prompt as any).likes || '1.2k'}</span>
-                                <span className="material-symbols-outlined text-[8px] xs:text-[10px] sm:text-[12px]">download</span>
-                                <span className="text-[6px] xs:text-[7px] sm:text-[9px] font-bold leading-none">{(prompt as any).downloads || '840'}</span>
-                              </div>
-                              <div className="flex items-center gap-0.5 bg-primary/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                                <span className="material-symbols-outlined text-primary text-[8px] xs:text-[9px] sm:text-[11px] fill-[1]">monetization_on</span>
-                                <span className="text-[6px] xs:text-[8px] sm:text-[10px] font-black text-primary">{prompt.price}</span>
-                              </div>
-                            </div>
+                          
+                          <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
+                             <span className="text-lg font-black text-slate-900">${prompt.price}</span>
+                             <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1 px-2 py-0.5 bg-yellow-50 text-yellow-600 rounded-lg">
+                                  <span className="material-symbols-outlined text-xs fill-[1]">star</span>
+                                  <span className="text-[10px] font-bold">{prompt.rating}</span>
+                                </div>
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{prompt.model?.split(' ')[0]}</span>
+                             </div>
                           </div>
                         </div>
                       </div>
@@ -647,8 +533,27 @@ export default function Home() {
           </div>
         </main>
         
-        {/* Trending Sidebar - Desktop Only */}
-        <TrendingSidebar />
+        {bulkMode && selectedPrompts.size > 0 && (
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-2xl bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-[2rem] p-4 shadow-2xl flex items-center justify-between gap-4 animate-in slide-in-from-bottom-10">
+                <div className="flex items-center gap-4 pl-4 text-white">
+                    <div className="size-10 rounded-full bg-primary flex items-center justify-center">
+                        <span className="material-symbols-outlined text-sm font-bold">shopping_cart</span>
+                    </div>
+                    <div>
+                        <p className="font-bold text-sm leading-none">{selectedPrompts.size} Prompts Selected</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Ready for bulk action</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <button className="px-6 py-3 rounded-xl bg-white/5 text-white font-bold text-xs hover:bg-white/10 transition-all">
+                        Add to Folder
+                    </button>
+                    <button className="px-8 py-3 rounded-xl bg-primary text-white font-bold text-xs shadow-lg shadow-primary/30 hover:brightness-110 transition-all">
+                        Buy Bulk ({selectedPrompts.size})
+                    </button>
+                </div>
+            </div>
+        )}
       </div>
     </div>
   );

@@ -1,13 +1,78 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { promptData } from '@/lib/data';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/useAuth';
 
 export default function PromptDetails() {
+    const router = useRouter();
     const params = useParams();
     const id = params.id;
-    const prompt = promptData.find(p => p.id === Number(id));
+    const { user } = useAuth();
+    const [prompt, setPrompt] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDelete = async () => {
+        if (!confirm('Are you sure you want to delete this prompt architecture? This action cannot be undone.')) return;
+        
+        setIsDeleting(true);
+        const { error } = await supabase
+            .from('prompts')
+            .delete()
+            .eq('id', id);
+        
+        if (!error) {
+            router.push('/profile');
+        } else {
+            alert('Failed to delete: ' + error.message);
+            setIsDeleting(false);
+        }
+    };
+
+    useEffect(() => {
+        async function fetchPrompt() {
+            setLoading(true);
+            try {
+                // Try database fetch
+                const { data, error } = await supabase
+                    .from('prompts')
+                    .select(`
+                        *,
+                        profiles:creator_id (
+                            id,
+                            full_name,
+                            username,
+                            avatar_url,
+                            bio
+                        ),
+                        prompt_media (*)
+                    `)
+                    .eq('id', id)
+                    .single();
+                
+                if (data && !error) {
+                    setPrompt(data);
+                } else {
+                    // Fallback to local data
+                    const { promptData } = require('@/lib/data');
+                    const localPrompt = promptData.find((p: any) => p.id === Number(id) || p.id === id);
+                    if (localPrompt) setPrompt(localPrompt);
+                }
+            } catch (e) {
+                // Fallback on total failure
+                const { promptData } = require('@/lib/data');
+                const localPrompt = promptData.find((p: any) => p.id === Number(id) || p.id === id);
+                if (localPrompt) setPrompt(localPrompt);
+            }
+            setLoading(false);
+        }
+        if (id) fetchPrompt();
+    }, [id]);
+    
+    if (loading) return <div className="min-h-screen flex items-center justify-center bg-background-light">Loading Architecture...</div>;
     
     if (!prompt) {
         return (
@@ -29,160 +94,180 @@ export default function PromptDetails() {
                     <nav className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 mb-8">
                         <Link href="/" className="hover:text-primary transition-colors">Marketplace</Link>
                         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                        <span>{prompt.category.split(' • ')[0]}</span>
+                        <span>{(prompt.category || 'Architecture').split(' • ')[0]}</span>
                         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                        <span className="text-primary">{prompt.title}</span>
+                        <span className="text-primary">{prompt.title || 'Masterpiece'}</span>
                     </nav>
 
                     <div className="flex flex-col lg:flex-row gap-8">
                         {/* LEFT COLUMN: Main Content */}
                         <div className="flex-1 space-y-12">
                             {/* Hero Section & Title */}
-                            <div>
-                                <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">{prompt.title}</h1>
-                                <div className="flex flex-wrap items-center gap-4">
-                                    <div className="flex items-center gap-2.5">
-                                        {prompt.creatorAvatar ? (
-                                            <img
-                                                alt="User Avatar"
-                                                className="w-8 h-8 rounded-full border border-white shadow-sm"
-                                                data-alt="Portrait of the prompt creator"
-                                                src={prompt.creatorAvatar}
-                                            />
-                                        ) : (
-                                            <div className={`w-8 h-8 rounded-full ${prompt.creatorBg} flex items-center justify-center text-primary text-[10px] font-bold border border-white shadow-sm`}>
-                                                {prompt.creatorInitials || prompt.creatorIcon && <span className="material-symbols-outlined text-[16px]">{prompt.creatorIcon}</span> || '??'}
-                                            </div>
-                                        )}
-                                        <span className="text-sm font-bold text-slate-600">{prompt.creator}</span>
+                             <div>
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+                                    <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900">{prompt.title}</h1>
+                                    
+                                    {/* Creator Actions */}
+                                    {user && prompt.creator_id === user.id && (
+                                        <div className="flex items-center gap-3">
+                                            <Link href={`/edit-prompt/${prompt.id}`} className="px-6 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-2xl flex items-center gap-2 hover:border-primary hover:text-primary transition-all shadow-sm">
+                                                <span className="material-symbols-outlined text-[18px]">edit</span>
+                                                Edit Asset
+                                            </Link>
+                                            <button 
+                                                onClick={handleDelete}
+                                                disabled={isDeleting}
+                                                className="px-6 py-3 bg-white border border-slate-200 text-slate-400 font-bold rounded-2xl flex items-center gap-2 hover:border-red-500 hover:text-red-500 transition-all shadow-sm disabled:opacity-50"
+                                            >
+                                                <span className="material-symbols-outlined text-[18px]">{isDeleting ? 'sync' : 'delete'}</span>
+                                                {isDeleting ? 'Deleting...' : 'Delete'}
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="size-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-sm border border-primary/20 shadow-sm shadow-primary/10 uppercase">
+                                            {prompt.profiles?.full_name ? prompt.profiles.full_name.split(' ').map((n:any) => n[0]).join('').slice(0,2) : prompt.profiles?.username?.slice(0,2) || '??'}
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Created by</p>
+                                            <p className="text-sm font-bold text-slate-900">{prompt.profiles?.full_name || prompt.profiles?.username || 'Elite Creator'}</p>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                                        <span className="material-symbols-outlined text-[14px] fill-[1]">verified</span>
-                                        {prompt.category.split(' • ')[0]}
+                                    <div className="h-6 w-px bg-slate-100"></div>
+                                    <div className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full">
+                                        <span className="material-symbols-outlined text-[16px] fill-[1]">verified</span>
+                                        {prompt.category || 'Architecture'}
                                     </div>
-                                    <div className="flex items-center gap-1.5 text-sm font-bold text-slate-500">
-                                        <span>(1.2k Reviews)</span>
+                                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
+                                        <div className="flex -space-x-1">
+                                            {[1,2,3,4].map(i => (
+                                                <div key={i} className="size-4 rounded-full border-2 border-white bg-slate-200" />
+                                            ))}
+                                        </div>
+                                        <span>({prompt.sales_count || '1.2K'} Reviews)</span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Media Gallery */}
-                            <div className="space-y-4">
-                                <div className="aspect-video w-full rounded-2xl overflow-hidden relative group border-2 border-white shadow-lg">
+                            {/* Media Gallery with modern depth */}
+                            <div className="space-y-6">
+                                <div className="aspect-video w-full rounded-[2.5rem] overflow-hidden relative group border-4 border-white shadow-card">
                                     <img
                                         alt="Main Preview"
-                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                        data-alt={prompt.dataAlt}
-                                        src={prompt.image}
+                                        className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                                        src={prompt.image_url}
                                     />
-                                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-4 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                                        <p className="text-white text-xs font-medium">Example output: {prompt.title}</p>
-                                    </div>
+                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                                    <button className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                        <div className="size-16 rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center justify-center text-white shadow-2xl scale-75 group-hover:scale-100 transition-transform duration-500">
+                                            <span className="material-symbols-outlined text-4xl">zoom_in</span>
+                                        </div>
+                                    </button>
                                 </div>
                                 
                                 {/* Thumbnail Gallery */}
-                                <div className="grid grid-cols-4 gap-3">
-                                    {/* Thumbnail 1 - Image */}
-                                    <div className="aspect-square rounded-xl overflow-hidden relative group border border-white shadow-md cursor-pointer">
-                                        <img
-                                            alt="Thumbnail 1"
-                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                                            src="https://picsum.photos/seed/thumb1/200/200.jpg"
-                                        />
-                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300"></div>
-                                    </div>
-                                    
-                                    {/* Thumbnail 2 - Image */}
-                                    <div className="aspect-square rounded-xl overflow-hidden relative group border border-white shadow-md cursor-pointer">
-                                        <img
-                                            alt="Thumbnail 2"
-                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                                            src="https://picsum.photos/seed/thumb2/200/200.jpg"
-                                        />
-                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300"></div>
-                                    </div>
-                                    
-                                    {/* Thumbnail 3 - Image */}
-                                    <div className="aspect-square rounded-xl overflow-hidden relative group border border-white shadow-md cursor-pointer">
-                                        <img
-                                            alt="Thumbnail 3"
-                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                                            src="https://picsum.photos/seed/thumb3/200/200.jpg"
-                                        />
-                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300"></div>
-                                    </div>
-                                    
-                                    {/* Thumbnail 4 - Video */}
-                                    <div className="aspect-square rounded-xl overflow-hidden relative group border border-white shadow-md cursor-pointer">
-                                        <img
-                                            alt="Video Thumbnail"
-                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                                            src="https://picsum.photos/seed/video1/200/200.jpg"
-                                        />
-                                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center">
-                                            <div className="w-10 h-10 bg-white/90 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                                                <span className="material-symbols-outlined text-primary text-[20px] fill-[1]">play_arrow</span>
-                                            </div>
+                                <div className="grid grid-cols-4 gap-4">
+                                    {[1, 2, 3, 4].map((i) => (
+                                        <div key={i} className="aspect-square rounded-[1.5rem] overflow-hidden relative group border-2 border-white shadow- premium cursor-pointer transition-all hover:scale-105 active:scale-95">
+                                            <img
+                                                alt={`Thumbnail ${i}`}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                src={`https://picsum.photos/seed/thumb${i}/400/400.jpg`}
+                                            />
+                                            <div className="absolute inset-0 bg-primary/0 group-hover:bg-primary/20 transition-all duration-300"></div>
                                         </div>
-                                    </div>
+                                    ))}
                                 </div>
                             </div>
 
                             {/* Prompt Description */}
-                            <section className="space-y-6">
-                                <h2 className="text-2xl font-bold flex items-center gap-2.5">
-                                    <span className="material-symbols-outlined text-primary">description</span>
-                                    Description
+                            <section className="space-y-8">
+                                <h2 className="text-2xl font-bold flex items-center gap-3 text-slate-900">
+                                    <div className="size-10 rounded-xl bg-slate-900 flex items-center justify-center text-white">
+                                        <span className="material-symbols-outlined">description</span>
+                                    </div>
+                                    Prompt Details
                                 </h2>
-                                <p className="text-slate-600 leading-relaxed text-lg font-light">
-                                    {prompt.fullDescription}
+                                <p className="text-slate-600 leading-relaxed text-lg font-medium">
+                                    {prompt.full_description}
                                 </p>
-                                <div className="grid md:grid-cols-2 gap-4 pt-2">
-                                    <div className="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm">
-                                        <h4 className="font-bold text-sm mb-4 flex items-center gap-2">
-                                            <span className="material-symbols-outlined text-green-500 text-[20px]">check_circle</span>
-                                            Key Benefits
+                                <div className="grid md:grid-cols-2 gap-6 pt-4">
+                                    <div className="p-8 rounded-3xl bg-white border border-slate-100 shadow-sm relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-3xl -mr-8 -mt-8"></div>
+                                        <h4 className="font-bold text-sm text-slate-900 mb-6 flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-primary">auto_fix_high</span>
+                                            Key Features
                                         </h4>
-                                        <ul className="text-xs space-y-3 font-medium text-slate-500">
-                                            <li className="flex items-center gap-2">• High consistency in lighting styles</li>
-                                            <li className="flex items-center gap-2">• Modular syntax for easy character swap</li>
-                                            <li className="flex items-center gap-2">• Pre-configured negative prompt included</li>
+                                        <ul className="space-y-4">
+                                            {[
+                                                'Photorealistic texture mapping',
+                                                'Dynamic lighting parameters',
+                                                'Modular prompt structure',
+                                                'Negative prompt optimization'
+                                            ].map(item => (
+                                                <li key={item} className="flex items-center gap-3 text-sm text-slate-500 font-medium">
+                                                    <div className="size-1.5 rounded-full bg-primary/40" />
+                                                    {item}
+                                                </li>
+                                            ))}
                                         </ul>
                                     </div>
-                                    <div className="p-6 rounded-2xl bg-white border border-slate-100 shadow-sm">
-                                        <h4 className="font-bold text-sm mb-4 flex items-center gap-2">
-                                            <span className="material-symbols-outlined text-primary text-[20px]">settings_input_component</span>
-                                            Parameters
+                                    <div className="p-8 rounded-3xl bg-white border border-slate-100 shadow-sm relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-accent/5 rounded-full blur-3xl -mr-8 -mt-8"></div>
+                                        <h4 className="font-bold text-sm text-slate-900 mb-6 flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-accent">settings_suggest</span>
+                                            Configurations
                                         </h4>
-                                        <ul className="text-xs space-y-3 font-medium text-slate-500">
-                                            <li className="flex items-center gap-2">• Aspect Ratio: 16:9 or 9:16</li>
-                                            <li className="flex items-center gap-2">• Custom variables: Included</li>
-                                            <li className="flex items-center gap-2">• Version: Latest</li>
+                                        <ul className="space-y-4">
+                                            {[
+                                                'Optimized for Midjourney v6+',
+                                                'Multi-aspect ratio support',
+                                                'Custom variable placeholders',
+                                                'Includes raw parameter set'
+                                            ].map(item => (
+                                                <li key={item} className="flex items-center gap-3 text-sm text-slate-500 font-medium">
+                                                    <div className="size-1.5 rounded-full bg-accent/40" />
+                                                    {item}
+                                                </li>
+                                            ))}
                                         </ul>
                                     </div>
                                 </div>
                             </section>
 
-                            {/* Blurred Prompt Placeholder */}
-                            <section className="space-y-6">
+                            {/* Locked Prompt with Modern Premium Look */}
+                            <section className="space-y-8">
                                 <div className="flex items-center justify-between">
-                                    <h2 className="text-2xl font-bold uppercase tracking-tight">The Prompt</h2>
-                                    <span className="text-[10px] font-bold text-primary bg-primary/10 px-3 py-1 rounded-full uppercase tracking-widest">PRO VERSION ONLY</span>
+                                    <h2 className="text-2xl font-bold text-slate-900">The Engineered Prompt</h2>
+                                    <div className="flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-full text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                        <span className="material-symbols-outlined text-sm">lock</span>
+                                        Protected Asset
+                                    </div>
                                 </div>
-                                <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-white p-6 md:p-8 shadow-inner">
-                                    <div className="absolute inset-0 flex items-center justify-center z-10 px-6">
-                                        <div className="text-center p-6 bg-white/80 backdrop-blur-xl rounded-2xl border border-white shadow-2xl max-w-sm">
-                                            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mx-auto mb-4">
-                                                <span className="material-symbols-outlined text-primary text-4xl fill-[1]">lock</span>
+                                <div className="relative rounded-[2.5rem] overflow-hidden border-2 border-slate-100">
+                                    <div className="absolute inset-0 bg-slate-900/5 backdrop-blur-3xl z-10 flex items-center justify-center p-8">
+                                        <div className="text-center p-12 bg-white/95 backdrop-blur-xl rounded-[2rem] border border-white max-w-lg shadow-2xl relative overflow-hidden group">
+                                            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-secondary to-accent"></div>
+                                            <div className="size-20 rounded-3xl bg-slate-900 text-white flex items-center justify-center mx-auto mb-8 shadow-xl rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                                                <span className="material-symbols-outlined text-4xl">key_visualizer</span>
                                             </div>
-                                            <p className="font-bold mb-2 text-lg">Unlock Premium Access</p>
-                                            <p className="text-sm text-slate-500 mb-6 font-medium">Use your credits to reveal the full engineered prompt architecture.</p>
-                                            <button className="w-full py-3 bg-primary text-white font-bold rounded-xl shadow-xl shadow-primary/20 hover:bg-blue-700 transition-all">Unlock for {prompt.price}</button>
+                                            <h3 className="text-2xl font-black text-slate-900 mb-2">Access Required</h3>
+                                            <p className="text-slate-500 mb-10 font-medium leading-relaxed">
+                                                Initialize synchronization with <span className="text-primary font-bold">{prompt.price} Credits</span> to reveal the high-precision engineered prompt architecture.
+                                            </p>
+                                            <button className="w-full py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:-translate-y-1 transition-all duration-300 active:scale-95 flex items-center justify-center gap-2">
+                                                <span className="material-symbols-outlined">bolt</span>
+                                                Unlock Architecture
+                                            </button>
                                         </div>
                                     </div>
-                                    <div className="blur-[8px] opacity-30 select-none pointer-events-none">
-                                        <p className="font-mono text-sm leading-10 text-slate-800">
-                                            /imagine prompt: engineering_structure_{prompt.id} --style raw --v 6.0 <br />
+                                    <div className="bg-slate-50 p-12 select-none pointer-events-none opacity-20">
+                                        <p className="font-mono text-lg leading-relaxed text-slate-900">
+                                            /imagine prompt: engineering_structure_{prompt.id} <br />
+                                            --style raw --v 6.0 --ar 16:9 <br />
                                             Lighting: volumetric_fog, neon_red_cyan_interplay, rim_light_700 <br />
                                             Texture: intricate_fiber_optics, weathered_chrome, facial_displacement_mapping <br />
                                             Negative: low_res, blurry, distorted_anatomy, generic_sci_fi, oversaturated_yellows
@@ -192,25 +277,21 @@ export default function PromptDetails() {
                             </section>
 
                             
-                            {/* Reviews Section */}
-                            <section className="space-y-10 pt-12 border-t border-slate-200">
-                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                                    <h2 className="text-3xl font-bold">User Experience & Reviews</h2>
+                            {/* Modern Reviews Section */}
+                            <section className="space-y-12 pt-16 border-t border-slate-100">
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+                                    <div>
+                                        <h2 className="text-2xl font-bold text-slate-900 mb-2">User Experience</h2>
+                                        <p className="text-slate-500 font-medium tracking-tight text-sm">Feedback from verified prompt engineers</p>
+                                    </div>
                                     <div className="flex gap-4">
-                                        <div className="flex flex-col items-center p-4 rounded-2xl bg-green-50 border border-green-200 min-w-[100px]">
-                                            <span className="material-symbols-outlined text-green-600 text-2xl mb-1">task_alt</span>
-                                            <span className="font-bold text-xl text-green-700">92%</span>
-                                            <span className="text-[10px] uppercase text-green-600 font-bold tracking-wider">Works</span>
+                                        <div className="flex flex-col items-center justify-center p-5 bg-green-50 rounded-3xl border border-green-100 min-w-[120px]">
+                                            <span className="font-black text-2xl text-green-600">92%</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-green-500 mt-1">Consistency</span>
                                         </div>
-                                        <div className="flex flex-col items-center p-4 rounded-2xl bg-yellow-50 border border-yellow-200 min-w-[100px]">
-                                            <span className="material-symbols-outlined text-yellow-600 text-2xl mb-1">pending</span>
-                                            <span className="font-bold text-xl text-yellow-700">6%</span>
-                                            <span className="text-[10px] uppercase text-yellow-600 font-bold tracking-wider">Partial</span>
-                                        </div>
-                                        <div className="flex flex-col items-center p-4 rounded-2xl bg-red-50 border border-red-200 min-w-[100px]">
-                                            <span className="material-symbols-outlined text-red-600 text-2xl mb-1">error_outline</span>
-                                            <span className="font-bold text-xl text-red-700">2%</span>
-                                            <span className="text-[10px] uppercase text-red-600 font-bold tracking-wider">Failed</span>
+                                        <div className="flex flex-col items-center justify-center p-5 bg-indigo-50 rounded-3xl border border-indigo-100 min-w-[120px]">
+                                            <span className="font-black text-2xl text-indigo-600">4.9</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-500 mt-1">Average</span>
                                         </div>
                                     </div>
                                 </div>
@@ -271,61 +352,58 @@ export default function PromptDetails() {
                         </div>
 
                         {/* RIGHT COLUMN: Sticky Purchase Sidebar */}
-                        <aside className="lg:w-80">
-                            <div className="sticky top-24 space-y-4">
-                                <div className="p-6 rounded-2xl bg-white border border-slate-100 shadow-2xl shadow-slate-200/50">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-3 py-1 rounded-full uppercase tracking-widest">Active Deal</span>
-                                    </div>
-                                    <div className="flex items-baseline gap-2 mb-6">
-                                        <span className="text-4xl font-black text-slate-900 tracking-tight">{prompt.price.split(' ')[0]}</span>
-                                        <span className="text-lg font-bold text-slate-400">CREDITS</span>
-                                    </div>
-                                    <div className="space-y-4 mb-8">
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="font-medium text-slate-400">Your Wallet</span>
-                                            <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                                                <span className="material-symbols-outlined text-primary text-[18px] fill-[1]">account_balance_wallet</span>
-                                                1,200
+                        <aside className="lg:w-96">
+                            <div className="sticky top-24 space-y-6">
+                                <div className="p-8 rounded-[2.5rem] border border-slate-100 bg-white shadow-card relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-full h-1.5 bg-primary/20"></div>
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="flex items-center gap-1.5 px-3 py-1 bg-primary/5 text-primary text-[10px] font-bold uppercase tracking-widest rounded-full border border-primary/10">
+                                            <span className="relative flex h-2 w-2">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                                             </span>
-                                        </div>
-                                        <div className="h-[1px] bg-slate-100"></div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="font-medium text-slate-400">Model Compatibility</span>
-                                            <span className="font-bold text-slate-900">{prompt.category.split(' • ')[0]}</span>
+                                            Instant Access
                                         </div>
                                     </div>
-                                    <button className="w-full bg-primary hover:bg-blue-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-3 shadow-xl shadow-primary/20 group transition-all">
-                                        <span className="material-symbols-outlined group-hover:animate-pulse fill-[1]">bolt</span>
-                                        UNLOCK ARCHITECTURE
+                                    <div className="flex items-baseline gap-2 mb-8">
+                                        <span className="text-5xl font-black text-slate-900 tracking-tight">${prompt.price || '0'}</span>
+                                        <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">USD</span>
+                                    </div>
+                                    <div className="space-y-4 mb-10">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-slate-500 font-medium">Platform Free</span>
+                                            <span className="text-slate-900 font-bold">Included</span>
+                                        </div>
+                                        <div className="h-[1px] bg-slate-50"></div>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-slate-500 font-medium">Commercial License</span>
+                                            <span className="text-slate-900 font-bold">Personal</span>
+                                        </div>
+                                    </div>
+                                    <button className="w-full bg-slate-900 text-white font-bold py-5 rounded-[1.5rem] shadow-xl shadow-slate-900/10 hover:bg-primary hover:shadow-primary/20 hover:-translate-y-1 transition-all duration-300 active:scale-95 flex items-center justify-center gap-2">
+                                        <span className="material-symbols-outlined text-xl">payments</span>
+                                        Purchase Now
                                     </button>
-                                    <div className="mt-6 text-center">
-                                        <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-6">Secured by PromptPay</p>
-                                        <div className="flex items-center justify-center gap-6 text-[10px] font-bold text-slate-500">
-                                            <span className="flex items-center gap-1.5 uppercase">
-                                                <span className="material-symbols-outlined text-[16px] text-primary">verified_user</span> 7-day refund
-                                            </span>
-                                        </div>
-                                    </div>
+                                    <p className="mt-4 text-center text-[11px] font-bold text-slate-400 uppercase tracking-widest">Secure transaction via Stripe</p>
                                 </div>
 
-                                <div className="p-6 rounded-xl bg-slate-900 text-white shadow-xl overflow-hidden relative">
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full blur-3xl -mr-12 -mt-12"></div>
-                                    <h3 className="font-bold text-sm mb-4 uppercase tracking-widest text-slate-400 relative z-10">Specs & Stats</h3>
-                                    <div className="grid grid-cols-2 gap-4 relative z-10">
-                                        <div>
-                                            <p className="text-[8px] uppercase text-slate-500 font-bold mb-1">Sales</p>
-                                            <p className="text-2xl font-black">{prompt.sales}</p>
+                                <div className="p-8 rounded-[2.5rem] bg-slate-900 text-white shadow-2xl overflow-hidden relative group">
+                                    <div className="absolute top-0 right-0 w-40 h-40 bg-primary/20 rounded-full blur-[80px] -mr-16 -mt-16 group-hover:bg-primary/30 transition-colors"></div>
+                                    <h3 className="font-bold text-xs mb-8 uppercase tracking-widest text-slate-500 relative z-10">Performance Metrics</h3>
+                                    <div className="grid grid-cols-2 gap-8 relative z-10 px-2">
+                                        <div className="border-l border-white/10 pl-4 py-1">
+                                            <p className="text-[10px] uppercase text-slate-500 font-bold mb-1 tracking-wider">Total Sales</p>
+                                            <p className="text-3xl font-black">{prompt.sales_count || 0}</p>
                                         </div>
-                                        <div>
-                                            <p className="text-[8px] uppercase text-slate-500 font-bold mb-1">Impact</p>
-                                            <p className="text-2xl font-black">{prompt.impact}</p>
+                                        <div className="border-l border-white/10 pl-4 py-1">
+                                            <p className="text-[10px] uppercase text-slate-500 font-bold mb-1 tracking-wider">Reliability</p>
+                                            <p className="text-3xl font-black">9.8/10</p>
                                         </div>
-                                        <div className="col-span-2">
-                                            <p className="text-[8px] uppercase text-slate-500 font-bold mb-2">Certified Models</p>
+                                        <div className="col-span-2 pt-4">
+                                            <p className="text-[10px] uppercase text-slate-500 font-bold mb-4 tracking-wider">Verified Environments</p>
                                             <div className="flex flex-wrap gap-2">
-                                                {prompt.verifiedModels.map((model, idx) => (
-                                                    <span key={idx} className="px-2 py-1 bg-white/10 rounded-lg text-[8px] font-bold border border-white/10">{model}</span>
+                                                {(prompt.verified_models || []).map((model: string, idx: number) => (
+                                                    <span key={idx} className="px-3 py-1.5 bg-white/5 rounded-xl text-[10px] font-bold border border-white/10 hover:bg-white/10 transition-colors uppercase">{model}</span>
                                                 ))}
                                             </div>
                                         </div>

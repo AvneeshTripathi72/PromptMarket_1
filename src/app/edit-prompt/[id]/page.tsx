@@ -1,13 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
-export default function PostPrompt() {
+export default function EditPrompt() {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const params = useParams();
+  const promptId = params.id;
+  
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -17,9 +21,61 @@ export default function PostPrompt() {
     category: 'Illustration',
     promptText: '',
     price: '',
-    tags: [],
-    image: ''
+    image: '',
+    creator_id: ''
   });
+
+  useEffect(() => {
+    if (promptId) {
+      fetchPrompt();
+    }
+  }, [promptId]);
+
+  const fetchPrompt = async () => {
+    try {
+      const { data: { user: sbUser } } = await supabase.auth.getUser();
+      const isTrial = document.cookie.includes('trial_session=true');
+      
+      let user = sbUser;
+      if (!user && isTrial) {
+        user = { id: 'trial-id-000' } as any;
+      }
+
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('prompts')
+        .select('*')
+        .eq('id', promptId)
+        .single();
+
+      if (error) throw error;
+      
+      if (data.creator_id !== user.id) {
+        setMessage({ type: 'error', text: 'Unauthorized. You do not own this prompt.' });
+        setLoading(false);
+        return;
+      }
+
+      setFormData({
+        title: data.title || '',
+        platform: data.model || 'Midjourney',
+        category: data.category || 'Illustration',
+        promptText: data.description || '',
+        price: data.price?.toString() || '0',
+        image: data.image_url || '',
+        creator_id: data.creator_id || ''
+      });
+    } catch (err: any) {
+      console.error('Fetch Error:', err);
+      setMessage({ type: 'error', text: 'Failed to load prompt details.' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -40,31 +96,22 @@ export default function PostPrompt() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setSubmitting(true);
     setMessage(null);
 
     try {
-      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      const { data: { user: sbUser } } = await supabase.auth.getUser();
       const isTrial = document.cookie.includes('trial_session=true');
       
-      let user = supabaseUser;
+      let user = sbUser;
       if (!user && isTrial) {
-        user = { 
-          id: 'trial-id-000', 
-          email: 'admin@trial.com' 
-        } as any;
+        user = { id: 'trial-id-000' } as any;
       }
 
-      if (!user) {
-        setMessage({ 
-          type: 'error', 
-          text: 'Session expired. Please Sign In or Register to publish prompts.' 
-        });
-        setLoading(false);
-        return;
-      }
+      if (!user || (user.id !== formData.creator_id)) throw new Error('Unauthorized or session expired.');
 
-      let imageUrl = '';
+      let imageUrl = formData.image;
+
       if (imageFile) {
         const uploadFormData = new FormData();
         uploadFormData.append('file', imageFile);
@@ -79,28 +126,39 @@ export default function PostPrompt() {
         imageUrl = uploadData.url;
       }
 
-      const { error } = await supabase.from('prompts').insert({
-        title: formData.title,
-        category: formData.category,
-        model: formData.platform,
-        price: parseInt(formData.price) || 0,
-        fiat_price: `$${formData.price}.00`,
-        description: formData.promptText,
-        image_url: imageUrl,
-        creator_id: user.id,
-      });
+      const { error } = await supabase
+        .from('prompts')
+        .update({
+          title: formData.title,
+          category: formData.category,
+          model: formData.platform,
+          price: parseInt(formData.price) || 0,
+          fiat_price: `$${formData.price}.00`,
+          description: formData.promptText,
+          image_url: imageUrl,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', promptId)
+        .eq('creator_id', user.id);
 
       if (error) throw error;
 
-      setMessage({ type: 'success', text: 'Your prompt has been published successfully!' });
-      setTimeout(() => router.push('/'), 2000);
+      setMessage({ type: 'success', text: 'Your prompt has been updated successfully!' });
+      setTimeout(() => router.push('/profile'), 2000);
     } catch (err: any) {
-      console.error('Submit Error:', err);
-      setMessage({ type: 'error', text: err.message || 'Something went wrong while publishing.' });
+      console.error('Update Error:', err);
+      setMessage({ type: 'error', text: err.message || 'Something went wrong while updating.' });
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
+
+  if (loading) return (
+    <div className="min-h-screen flex flex-col items-center justify-center">
+        <div className="animate-spin size-12 border-4 border-primary border-t-transparent rounded-full mb-4"></div>
+        <p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Accessing Prompt Architecture...</p>
+    </div>
+  );
 
   return (
     <div className="flex-1 p-6 sm:p-10 w-full relative z-10">
@@ -110,43 +168,16 @@ export default function PostPrompt() {
           <div className="flex-1 max-w-4xl">
             <header className="mb-12">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest mb-6 border border-primary/20">
-                <span className="material-symbols-outlined text-xs fill-[1]">verified</span>
-                Seller Studio
+                <span className="material-symbols-outlined text-xs fill-[1]">edit_note</span>
+                Architect Studio
               </div>
               <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900 mb-6">
-                Publish Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Masterpiece</span>
+                Refine Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Creation</span>
               </h1>
               <p className="text-slate-500 font-medium text-lg max-w-2xl leading-relaxed">
-                Transform your engineered prompt architecture into a high-performance asset for the global marketplace.
+                Updating your prompt configuration to maintain peak market performance and synchronization.
               </p>
             </header>
-
-            {/* Stepper Infrastructure */}
-            <div className="flex items-center mb-16 relative">
-              <div className="flex items-center gap-5 group cursor-pointer relative z-10">
-                <div className="size-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black text-xl shadow-xl group-hover:scale-110 transition-transform">01</div>
-                <div className="hidden sm:block">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-0.5">Step One</p>
-                  <p className="font-black text-slate-900 uppercase italic text-sm">Core Identity</p>
-                </div>
-              </div>
-              <div className="flex-1 h-[2px] bg-slate-100 mx-8"></div>
-              <div className="flex items-center gap-5 text-slate-300 group cursor-default relative z-10">
-                <div className="size-14 rounded-2xl border-2 border-slate-100 flex items-center justify-center font-black text-xl bg-white">02</div>
-                <div className="hidden sm:block">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-0.5">Step Two</p>
-                  <p className="font-black uppercase italic text-sm">Architecture</p>
-                </div>
-              </div>
-              <div className="flex-1 h-[2px] bg-slate-100 mx-8"></div>
-              <div className="flex items-center gap-5 text-slate-300 group cursor-default relative z-10">
-                <div className="size-14 rounded-2xl border-2 border-slate-100 flex items-center justify-center font-black text-xl bg-white">03</div>
-                <div className="hidden sm:block">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 mb-0.5">Step Three</p>
-                  <p className="font-black uppercase italic text-sm">Deployment</p>
-                </div>
-              </div>
-            </div>
 
             <form onSubmit={handleSubmit} className="space-y-10">
               {message && (
@@ -163,7 +194,7 @@ export default function PostPrompt() {
 
                 <div className="grid grid-cols-1 gap-8 relative z-10">
                   <div className="group">
-                    <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-4 group-focus-within:text-primary transition-colors">Digital Title</label>
+                    <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-4 group-focus-within:text-primary transition-colors">Prompt Title</label>
                     <div className="relative">
                         <input
                         name="title"
@@ -171,7 +202,7 @@ export default function PostPrompt() {
                         onChange={handleChange}
                         required
                         className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:ring-4 focus:ring-primary/5 focus:border-primary outline-none transition-all font-bold text-slate-800 placeholder:text-slate-300 text-lg"
-                        placeholder="e.g. Ultra-Realistic Architecture Render"
+                        placeholder="Enter a descriptive title..."
                         type="text"
                         />
                         <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-200">
@@ -182,7 +213,7 @@ export default function PostPrompt() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Target AI Platform</label>
+                      <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-4">AI Platform</label>
                       <div className="relative">
                         <select
                           name="platform"
@@ -200,7 +231,7 @@ export default function PostPrompt() {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Market Category</label>
+                      <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Category</label>
                       <div className="relative">
                         <select
                           name="category"
@@ -222,7 +253,7 @@ export default function PostPrompt() {
 
                 <div className="pt-10 border-t border-slate-50 space-y-6 relative z-10">
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Precision Prompt Architecture</label>
+                    <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Engineered Prompt Command</label>
                     <div className="relative group/textarea">
                         <textarea
                         name="promptText"
@@ -236,10 +267,6 @@ export default function PostPrompt() {
                             <span className="material-symbols-outlined text-2xl">code</span>
                         </div>
                     </div>
-                    <p className="mt-4 text-[10px] font-black text-slate-400 flex items-center gap-2 uppercase tracking-widest">
-                      <span className="material-symbols-outlined text-[16px]">info</span>
-                      Use brackets [subject] for parts users can customize manually.
-                    </p>
                   </div>
                 </div>
 
@@ -262,21 +289,20 @@ export default function PostPrompt() {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Visual Prototype Asset</label>
+                      <label className="block text-xs font-black uppercase tracking-widest text-slate-400 mb-4">Update Prototype</label>
                       <input
                         type="file"
                         accept="image/*"
                         onChange={handleImageUpload}
                         className="hidden"
                         id="image-upload"
-                        required
                       />
                       <label 
                         htmlFor="image-upload"
                         className="flex items-center justify-center gap-3 w-full h-[60px] bg-slate-900 text-white rounded-2xl cursor-pointer hover:bg-primary transition-all active:scale-95 shadow-lg shadow-slate-900/10 font-bold text-sm"
                       >
-                        <span className="material-symbols-outlined text-xl">{imageFile ? 'check_circle' : 'image'}</span>
-                        <span>{imageFile ? 'Asset Registered' : 'Upload Reference Media'}</span>
+                        <span className="material-symbols-outlined text-xl">image</span>
+                        <span>{imageFile ? 'New Image Ready' : 'Replace Media Asset'}</span>
                       </label>
                     </div>
                   </div>
@@ -284,22 +310,21 @@ export default function PostPrompt() {
               </div>
 
               <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pt-6">
-                <button 
-                  className="px-8 py-4 font-black text-slate-400 hover:text-slate-900 transition-all flex items-center gap-3 text-xs uppercase tracking-widest bg-white border border-slate-100 rounded-2xl hover:border-slate-300" 
-                  type="button"
-                  disabled={loading}
+                <Link 
+                  href="/profile"
+                  className="px-8 py-4 font-black text-slate-400 hover:text-slate-900 transition-all flex items-center gap-3 text-xs uppercase tracking-widest bg-white border border-slate-100 rounded-2xl hover:border-slate-300"
                 >
-                  <span className="material-symbols-outlined text-xl">save</span>
-                  Save for Analysis
-                </button>
+                  <span className="material-symbols-outlined text-xl">arrow_back</span>
+                  Abort Changes
+                </Link>
                 <div className="flex gap-4 w-full sm:w-auto">
                     <button 
-                    className="flex-1 sm:flex-none px-12 py-5 bg-primary text-white font-black hover:brightness-110 shadow-2xl shadow-primary/30 transition-all flex items-center justify-center gap-4 uppercase tracking-widest text-xs rounded-2xl active:scale-95 disabled:opacity-50 group" 
+                    className="flex-1 sm:flex-none px-10 py-5 bg-primary text-white font-black hover:brightness-110 shadow-2xl shadow-primary/30 transition-all flex items-center justify-center gap-4 uppercase tracking-widest text-xs rounded-2xl active:scale-95 disabled:opacity-50" 
                     type="submit"
-                    disabled={loading}
+                    disabled={submitting}
                     >
-                    <span>{loading ? 'Initializing...' : 'Complete Global Deployment'}</span>
-                    <span className="material-symbols-outlined text-lg group-hover:rotate-12 transition-transform">{loading ? 'sync' : 'rocket_launch'}</span>
+                    <span>{submitting ? 'Syncing...' : 'Deploy Updates'}</span>
+                    <span className="material-symbols-outlined text-lg">{submitting ? 'sync' : 'published_with_changes'}</span>
                     </button>
                 </div>
               </div>
@@ -311,52 +336,33 @@ export default function PostPrompt() {
             <div className="sticky top-10">
               <header className="mb-8 flex items-center justify-between px-2">
                 <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Architecture Preview</h2>
-                <div className="flex items-center gap-2 text-[10px] text-emerald-500 font-bold bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-widest">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                  Real-time Sync
+                <div className="size-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center animate-pulse">
+                     <span className="material-symbols-outlined text-lg">visibility</span>
                 </div>
               </header>
 
               <div className="group bg-white rounded-[2.5rem] overflow-hidden shadow-card border border-slate-100 flex flex-col relative hover:shadow-2xl transition-all duration-500">
                 <div className="relative aspect-square overflow-hidden bg-slate-900">
-                  {formData.image ? (
-                    <img
-                      src={formData.image}
-                      alt="Marketplace Prototype"
-                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 opacity-95 group-hover:opacity-100"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-slate-100 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-6xl text-slate-200">image_search</span>
-                    </div>
-                  )}
+                  <img
+                    src={formData.image || 'https://via.placeholder.com/400'}
+                    alt="Preview Prototype"
+                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 opacity-95 group-hover:opacity-100"
+                  />
                   <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] font-black text-slate-900 uppercase tracking-widest border border-white/20 shadow-sm">
-                    {formData.category || 'Draft'}
+                    {formData.category}
                   </div>
                   <div className="absolute top-6 right-6 size-10 bg-white/90 backdrop-blur-md rounded-xl flex items-center justify-center text-primary shadow-sm">
                        <span className="material-symbols-outlined text-[20px] fill-[1]">bolt</span>
                   </div>
                 </div>
-
                 <div className="p-10">
-                  <h4 className="font-black text-2xl text-slate-900 mb-6 leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                  <h4 className="font-black text-2xl text-slate-900 mb-8 leading-tight group-hover:text-primary transition-colors line-clamp-2">
                     {formData.title || 'Untitled Prototype'}
                   </h4>
-
-                  {formData.promptText && (
-                    <div className="mb-8 p-6 bg-slate-50 rounded-[1.5rem] border border-slate-100">
-                      <p className="text-xs text-slate-600 font-mono line-clamp-3 leading-relaxed italic">
-                        "{formData.promptText}"
-                      </p>
-                    </div>
-                  )}
                   
-                  <div className="flex items-center justify-between pt-8 border-t border-slate-50 mt-auto">
+                  <div className="flex items-center justify-between pt-8 border-t border-slate-50">
                     <div className="flex items-center gap-2">
-                        <span className="text-3xl font-black text-slate-900 tracking-tighter">${formData.price || '0'}</span>
+                        <span className="text-3xl font-black text-slate-900 tracking-tighter">${formData.price}</span>
                         <span className="text-slate-400 font-bold text-xs uppercase tracking-widest">USD</span>
                     </div>
                     <div className="flex items-center gap-4">
@@ -368,16 +374,15 @@ export default function PostPrompt() {
                 </div>
               </div>
 
-              <div className="mt-8 p-8 bg-slate-900 rounded-[3rem] text-white relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/30 transition-colors"></div>
-                  <div className="flex items-center gap-4 mb-4 relative z-10">
-                       <div className="size-10 rounded-xl bg-white/10 flex items-center justify-center text-primary border border-white/10">
-                            <span className="material-symbols-outlined text-lg">security</span>
+              <div className="mt-8 p-8 bg-slate-50 rounded-[2rem] border border-slate-100">
+                  <div className="flex items-center gap-4 mb-4">
+                       <div className="size-10 rounded-xl bg-white flex items-center justify-center text-primary shadow-sm">
+                            <span className="material-symbols-outlined text-lg">info</span>
                        </div>
-                       <h4 className="font-black text-xs uppercase tracking-widest">Sync Protocol</h4>
+                       <h4 className="font-bold text-slate-900 text-sm">Deployment Guide</h4>
                   </div>
-                  <p className="text-slate-400 text-[11px] font-medium leading-relaxed relative z-10">
-                      Standardized data encryption active. Global distribution via edge nodes ensures sub-millisecond propagation once the transaction is finalized.
+                  <p className="text-slate-500 text-xs font-medium leading-relaxed">
+                      Changes takes exactly 2-3 seconds to propagate through the global neural network. Ensure your price reflects the complexity of the command.
                   </p>
               </div>
             </div>

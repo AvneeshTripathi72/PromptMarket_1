@@ -2,9 +2,19 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/lib/useAuth';
+import { supabase } from '@/lib/supabase';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
+  
+  const handleLogout = async () => {
+    // Clear trial session if active
+    document.cookie = "trial_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    await supabase.auth.signOut();
+    window.location.href = '/login';
+  };
   
   const isActive = (path: string) => {
     if (path === '/' && pathname === '/') return true;
@@ -15,70 +25,64 @@ export default function Sidebar() {
   return (
     <>
       {/* Left Navigation Sidebar */}
-      <nav className="w-24 glass-effect border-r border-white/20 hidden lg:flex flex-col items-center sticky top-0 h-screen py-8 gap-8 shrink-0">
-        <Link href="/" className="flex flex-col items-center group mb-5">
-          <div className="bg-primary p-2.5 rounded-xl text-white shadow-md shadow-primary/30">
-            <span className="material-symbols-outlined text-[26px] block">electric_bolt</span>
+      <nav className="w-20 lg:flex flex-col items-center sticky top-0 h-screen py-8 shrink-0 hidden z-50 border-r border-slate-100 bg-white/70 backdrop-blur-xl">
+        
+        <Link href="/" className="relative z-10 flex flex-col items-center mb-12 group">
+          <div className="bg-primary p-2.5 rounded-2xl text-white shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+            <span className="material-symbols-outlined text-2xl block">electric_bolt</span>
           </div>
         </Link>
-        <div className="flex flex-col items-center gap-3 w-full px-4 flex-1">
-          <Link 
-            href="/" 
-            className={`flex flex-col items-center gap-1.5 w-full rounded-xl py-4 transition-all ${
-              isActive('/') 
-                ? 'bg-primary/10 text-primary' 
-                : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[22px]">explore</span>
-            <span className="text-[11px] font-bold uppercase tracking-wider">Explore</span>
-          </Link>
-          <Link 
-            href="/profile" 
-            className={`flex flex-col items-center gap-1.5 w-full rounded-xl py-4 transition-all ${
-              isActive('/profile') 
-                ? 'bg-primary/10 text-primary' 
-                : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[22px]">person</span>
-            <span className="text-[11px] font-bold uppercase tracking-wider">Profile</span>
-          </Link>
+
+        <div className="relative z-10 flex flex-col items-center gap-3 w-full px-3 flex-1">
+          {[
+            { href: '/', icon: 'explore', label: 'Feed' },
+            { href: '/packages', icon: 'auto_awesome_motion', label: 'Packs' },
+            { href: '/folders', icon: 'folder', label: 'Saved' },
+            { href: '/profile', icon: 'person_outline', label: 'Me' }
+          ].map((item) => (
+            <Link 
+              key={item.href}
+              href={item.href} 
+              className={`flex flex-col items-center justify-center gap-1.5 w-full py-3.5 transition-all rounded-2xl relative group ${
+                isActive(item.href) 
+                  ? 'bg-primary/10 text-primary' 
+                  : 'text-slate-400 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <span className={`material-symbols-outlined text-[22px] ${isActive(item.href) ? 'fill-[1]' : ''}`}>
+                {item.icon}
+              </span>
+              <span className="text-[9px] font-bold uppercase tracking-wider">{item.label}</span>
+              {isActive(item.href) && (
+                <div className="absolute left-[-12px] top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
+              )}
+            </Link>
+          ))}
         </div>
         
-        {/* Credits Section */}
-        <div className="px-3 mb-4">
-          <div className="relative bg-gradient-to-br from-primary/10 to-primary/5 backdrop-blur-sm border border-primary/20 rounded-2xl p-2 overflow-hidden group cursor-pointer hover:border-primary/40 transition-all duration-300">
-            {/* Subtle glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            
-            {/* Content */}
-            <div className="relative z-10 flex flex-col items-center gap-1">
-              {/* Credits display */}
-              <div className="flex items-center gap-1">
-                <div className="relative">
-                  <span className="material-symbols-outlined text-primary text-xs">monetization_on</span>
-                  {/* Subtle pulse animation */}
-                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-sm scale-150 animate-pulse"></div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <span className="text-base font-bold text-slate-800 tracking-tight">120</span>
-                  <span className="text-[7px] text-slate-500 font-medium uppercase tracking-wider">Credits</span>
-                </div>
-              </div>
-              
-              {/* Top-up button */}
-              <div className="relative">
-                <div className="absolute inset-0 bg-primary rounded-lg blur-sm opacity-0 group-hover:opacity-30 transition-opacity duration-300"></div>
-                <button className="relative bg-primary/90 hover:bg-primary text-white px-2 py-1 rounded-lg font-medium text-[9px] transition-all duration-300 flex items-center gap-0.5 group-hover:scale-105 transform">
-                  <span className="material-symbols-outlined text-[9px]">add_circle</span>
-                  <span>Top Up</span>
+        {/* Bottom Actions */}
+        <div className="relative z-10 flex flex-col items-center gap-4 w-full px-4">
+          <div className="w-full border-t border-slate-100 pt-6 pb-2 flex flex-col items-center gap-6">
+            {user ? (
+                <button 
+                onClick={handleLogout}
+                className="size-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                >
+                <span className="material-symbols-outlined text-[22px]">logout</span>
                 </button>
-              </div>
+            ) : (
+                <Link 
+                href="/login"
+                className="size-10 rounded-xl flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 transition-all"
+                >
+                <span className="material-symbols-outlined text-[22px]">login</span>
+                </Link>
+            )}
+
+            <div className="flex flex-col items-center bg-slate-50 w-full py-3 rounded-2xl border border-slate-100 group cursor-default">
+                <span className="text-sm font-black text-slate-900 group-hover:text-primary transition-colors">120</span>
+                <span className="text-[8px] text-slate-400 uppercase font-bold tracking-widest">Credits</span>
             </div>
-            
-            {/* Decorative corner accent */}
-            <div className="absolute top-0 right-0 w-6 h-6 bg-gradient-to-br from-primary/20 to-transparent rounded-bl-xl"></div>
           </div>
         </div>
       </nav>

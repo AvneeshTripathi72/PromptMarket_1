@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 const trendingHighlights = [
   {
     id: 1,
@@ -53,116 +55,108 @@ const topCreators = [
 
 export default function TrendingSidebar() {
   return (
-    <div className="w-80 bg-gray-50 border-l border-gray-200 hidden xl:block">
-      <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
-        <h2 className="text-lg font-semibold text-gray-900">Discover</h2>
-        <p className="text-sm text-gray-600">Trending prompts & creators</p>
-      </div>
-
-      <div className="p-6 space-y-8">
-        {/* Trending Section */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Trending</h3>
-            <span className="text-xs text-gray-500">Updated hourly</span>
-          </div>
-          
-          <div className="space-y-4">
-            {trendingHighlights.map((section) => (
-              <div key={section.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-sm transition-shadow">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="material-symbols-outlined text-gray-600 text-lg">{section.icon}</span>
-                  <h4 className="font-medium text-gray-900">{section.title}</h4>
-                </div>
-                
-                <div className="space-y-2">
-                  {section.items.slice(0, 3).map((item, index) => (
-                    <div key={index} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{item.name}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-gray-500">{item.category}</span>
-                          <span className="text-xs text-gray-400">•</span>
-                          <span className="text-xs text-gray-500">{item.users}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 text-green-600 text-sm font-medium">
-                        <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
-                        <span>{item.change}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Categories Section */}
-        <div>
-          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Popular Categories</h3>
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="space-y-3">
-              {categories.map((category, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${category.color}`}>
-                      {category.name}
-                    </span>
-                  </div>
-                  <span className="text-sm text-gray-600 font-medium">{category.count}</span>
-                </div>
-              ))}
+    <div className="w-[22rem] hidden xl:block relative z-10 shrink-0">
+      <div className="sticky top-0 h-screen flex flex-col pt-10 pb-6">
+        <div className="px-8 mt-4 mb-10">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="size-8 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined text-xl">insights</span>
             </div>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Market Pulse</h2>
           </div>
+          <p className="text-sm text-slate-500 font-medium tracking-tight">Real-time trending data & insights</p>
         </div>
 
-        {/* Top Creators Section */}
-        <div>
-          <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Top Creators</h3>
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="space-y-3">
-              {topCreators.map((creator, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-bold text-gray-600">{index + 1}</span>
+        <div className="flex-1 overflow-y-auto px-8 space-y-10 no-scrollbar">
+          {/* Trending Highlights */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest">Trending Now</h3>
+              <div className="flex items-center gap-1.5 px-2 py-1 bg-green-50 rounded-full">
+                <div className="size-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-[10px] font-bold text-green-600 uppercase">Live</span>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              {trendingHighlights.slice(0, 2).map((section) => (
+                <div key={section.id} className="bg-white rounded-3xl border border-slate-100 p-5 shadow-sm hover:shadow-md hover:border-primary/20 transition-all cursor-pointer group">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="size-10 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-600 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                      <span className="material-symbols-outlined text-xl">{section.icon}</span>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{creator.name}</p>
-                      <p className="text-xs text-gray-500">{creator.prompts} prompts</p>
+                      <h4 className="font-bold text-slate-900 text-sm leading-tight">{section.title}</h4>
+                      <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">Updated just now</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className="material-symbols-outlined text-yellow-500 text-[14px]">star</span>
-                    <span className="text-sm font-medium text-gray-900">{creator.rating}</span>
+                  
+                  <div className="space-y-4">
+                    {section.items.slice(0, 3).map((item, index) => (
+                      <div key={index} className="flex items-center justify-between group/item">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-slate-800 truncate group-hover/item:text-primary transition-colors">{item.name}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] font-medium text-slate-400">{item.category}</span>
+                          </div>
+                        </div>
+                        <div className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-lg">
+                          {item.change}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        </div>
 
-        {/* Quick Stats */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-4 text-white">
-          <h3 className="font-semibold text-sm uppercase tracking-wide mb-3 opacity-90">Platform Stats</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-2xl font-bold">1.2K+</p>
-              <p className="text-xs opacity-80">Active Prompts</p>
+          {/* Top Creators card with modern depth */}
+          <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden shadow-2xl shadow-slate-900/20">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-[80px] rounded-full translate-x-10 -translate-y-10"></div>
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8 relative z-10">Elite Creators</h3>
+            <div className="space-y-6 relative z-10 w-full">
+              {topCreators.slice(0, 3).map((creator, index) => (
+                <div key={index} className="flex items-center justify-between cursor-pointer border-b border-white/5 pb-4 group">
+                  <div className="flex items-center gap-4">
+                    <div className="size-10 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center font-bold text-white text-xs group-hover:bg-primary group-hover:border-primary transition-all">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold tracking-tight group-hover:text-primary transition-colors">{creator.name}</p>
+                      <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">{creator.prompts} prompts</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs font-bold text-yellow-500">
+                    <span className="material-symbols-outlined text-sm fill-[1]">star</span>
+                    <span>{creator.rating}</span>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div>
-              <p className="text-2xl font-bold">847</p>
-              <p className="text-xs opacity-80">Creators</p>
+          </div>
+
+          {/* Featured Bundles with premium look */}
+          <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-8 text-center">Featured Packages</h3>
+            <div className="space-y-4">
+                {[
+                    { name: 'Starter Protocol', price: '49 ACC', icon: 'rocket_launch' },
+                    { name: 'Professional Sync', price: '129 ACC', icon: 'diamond' }
+                ].map((pkg, i) => (
+                    <div key={i} className="flex items-center gap-4 group cursor-pointer bg-slate-50 rounded-2xl p-3 border border-transparent hover:border-primary/20 hover:bg-primary/5 transition-all">
+                        <div className="size-12 bg-white rounded-xl shadow-sm flex items-center justify-center text-slate-600 group-hover:text-primary transition-colors">
+                            <span className="material-symbols-outlined text-xl">{pkg.icon}</span>
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-xs font-bold text-slate-900 leading-tight group-hover:text-primary transition-colors">{pkg.name}</p>
+                            <p className="text-[10px] text-primary font-bold mt-1 tracking-wider">{pkg.price}</p>
+                        </div>
+                        <span className="material-symbols-outlined text-lg text-slate-300 group-hover:text-primary group-hover:translate-x-1 transition-all">arrow_forward</span>
+                    </div>
+                ))}
             </div>
-            <div>
-              <p className="text-2xl font-bold">4.8</p>
-              <p className="text-xs opacity-80">Avg Rating</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold">24/7</p>
-              <p className="text-xs opacity-80">Support</p>
-            </div>
+            <Link href="/packages" className="block text-center mt-8 py-3.5 bg-slate-900 rounded-2xl text-[11px] font-bold uppercase tracking-widest text-white hover:bg-primary hover:shadow-lg hover:shadow-primary/20 transition-all">View All Packages</Link>
           </div>
         </div>
       </div>
